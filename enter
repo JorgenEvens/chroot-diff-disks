@@ -1,0 +1,54 @@
+#!/bin/sh
+
+ROOT=`pwd`
+ERROR=0
+
+# Usage
+if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
+	echo "usage: $0 [chroot-dir]"
+	exit 0;
+fi
+
+# Test if user is root
+if [ ! `whoami` = "root" ]; then
+	echo "Your are not root."
+	exit
+fi
+
+# Chroot supplied or use current dir
+if [ $# -gt 0 ]; then
+	ROOT=$1
+fi
+
+# Testing if valid chroot
+if [ ! -d "$ROOT/dev" ]; then
+	echo "chroot /dev not found."
+	ERROR=$(( $ERROR+1 ))
+fi
+
+if [ ! -d "$ROOT/sys" ]; then
+	echo "chroot /sys not found."
+	ERROR=$(( $ERROR+1 ))
+fi
+
+if [ ! -d "$ROOT/proc" ]; then
+	echo "chroot /proc not found."
+	ERROR=$(( $ERROR+1 ))
+fi
+
+if [ $ERROR -gt 0 ]; then
+	exit $ERROR
+fi
+
+# Mount system folders
+mount --bind /dev "$ROOT/dev"
+mount --bind /sys "$ROOT/sys"
+mount --bind /proc "$ROOT/proc"
+
+# Enter chroot
+chroot $ROOT
+
+# Cleanup after logout
+umount "$ROOT/dev"
+umount "$ROOT/sys"
+umount "$ROOT/proc"

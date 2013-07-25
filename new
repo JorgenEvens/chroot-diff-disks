@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Usage
+if [ "$1" == "--help" ] || [ "$1" == "-h" ] || [ $# -lt 2 ]; then
+	echo "usage: $0 chroot-type chroot-name [base-dir]"
+	exit 0;
+fi
+
+# Test if user is root
+if [ ! `whoami` = "root" ]; then
+	echo "Your are not root."
+	exit
+fi
+
+CHROOTS_LOCATION=`pwd`
+
+TYPE=$1
+NAME=$2
+
+if [ $# -gt 2 ]; then
+	CHROOTS_LOCATION="$3"
+fi
+
+# The base chroot on top of which a diff-image will be created.
+BASE="$CHROOTS_LOCATION/base/$TYPE"
+
+# The directory containing the diff
+DIFF="$CHROOTS_LOCATION/diff/$NAME"
+mkdir -p $DIFF
+
+# The mountpoint of the chroot
+MOUNT="$CHROOTS_LOCATION/vm/$NAME"
+mkdir -p "$MOUNT"
+
+if [ ! -d "$BASE" ]; then
+	echo "Could not find base chroot of supplied type."
+	exit 1
+fi
+
+mount -t aufs -o "br:${DIFF}:${BASE}=ro" none "$MOUNT"
+
+enter "$MOUNT"
+
+umount "$MOUNT"
